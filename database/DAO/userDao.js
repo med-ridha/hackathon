@@ -26,11 +26,25 @@ const userDao = {
     });
   },
   async generateAuthToken(user) {
-    const token = jwt.sign({ _id: user
-      ._id.toString() }, process.env.JWT_SECRET);
+    const token = jwt.sign({
+      _id: user
+        ._id.toString()
+    }, process.env.JWT_SECRET);
     user.tokens = user.tokens.concat({ token });
     await user.save();
     return token;
+  },
+  async registerUser(body) {
+    const password = body.password;
+    const hashedPassword = await bcrypt.hash(password, 8);
+    const user = new User({
+      name: body.name,
+      email: body.email,
+      password: hashedPassword,
+    });
+    await user.save();
+    return user;
+  
   }
 }
 
