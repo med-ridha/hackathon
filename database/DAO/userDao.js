@@ -5,16 +5,17 @@ import jwt from 'jsonwebtoken';
 const userDao = {
   async findByCredentials(email, password) {
     const promise = new Promise(async (res, rej) => {
-      // Find user by email and password.
-      const user = await User.findOne ({ email }); 
+      const user = await User.findOne({ email });
       if (!user) {
-        rej('Unable to login');
+        rej({ error: 'Unable to login' });
       }
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        rej('Unable to login');
+      if (user) {
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+          rej({ error: 'Unable to login' });
+        }
+        res(user);
       }
-      res(user);
     });
     try {
       const user = await promise;
@@ -24,25 +25,27 @@ const userDao = {
     }
   },
   generateAuthToken(user) {
+    console.log(user);
     const token = jwt.sign({
-      _id: user._id.toString() + user.name.toString(),
+      _id: user._id.toString() + user.fullname.toString(),
     }, process.env.JWT_SECRET);
     console.log(token);
     return token;
   },
-  async registerUser(body) {
+  async registerUser(body, file) {
     const promise = new Promise(async (res, rej) => {
       try {
         const password = body.password;
         const hashedPassword = await bcrypt.hash(password, 8);
         (new User({
           email: body.email,
-          name: body.name,
+          fullname: body.fullname,
           password: hashedPassword,
-          surname: body.surname,
           cin: body.cin,
-          region: body.region,
           phone: body.phone,
+          status: (body.type === 'ong') ? 'wating' : undefined,
+          type: 'user',
+          file: file,
         })).save().then(result => {
           res({ user: result });
         }).catch((error) => {
