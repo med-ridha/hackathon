@@ -4,26 +4,24 @@ import jwt from 'jsonwebtoken';
 
 const userDao = {
   async findByCredentials(email, password) {
-    User.findOne({ email }, (err, user) => {
-      if (err) {
-        throw new Error(err);
-      }
+    const promise = new Promise(async (res, rej) => {
+      // Find user by email and password.
+      const user = await User.findOne ({ email }); 
       if (!user) {
-        throw new Error('Unable to login');
+        rej('Unable to login');
       }
-      bcrypt.compare(password, user.password, (_, result) => {
-        if (result) {
-          return user;
-        } else {
-          throw new Error('Unable to login');
-        }
-      });
-    }, (err, user) => {
-      if (err) {
-        throw new Error(err);
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        rej('Unable to login');
       }
-      return user;
+      res(user);
     });
+    try {
+      const user = await promise;
+      return { user };
+    } catch (error) {
+      return { error };
+    }
   },
   generateAuthToken(user) {
     const token = jwt.sign({
@@ -57,9 +55,9 @@ const userDao = {
     });
     try {
       const user = await promise;
-      return {user};
-    }catch (error) {
-      return {error};
+      return { user };
+    } catch (error) {
+      return { error };
     }
   }
 }

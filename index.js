@@ -18,12 +18,12 @@ app.get('/', (_, res) => {
 })
 
 app.post("/login", async (req, res) => {
-  try {
-    const user = await User.findByCredentials(req.body.email, req.body.password);
+  const { user, error } = await User.findByCredentials(req.body.email, req.body.password);
+  if (error) {
+    res.status(400).send(error.error);
+  }else {
     const token = User.generateAuthToken(user);
     res.send({ user, token });
-  } catch (error) {
-    res.status(400).send();
   }
 })
 
