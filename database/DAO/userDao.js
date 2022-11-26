@@ -11,7 +11,7 @@ const userDao = {
       if (!user) {
         throw new Error('Unable to login');
       }
-      bcrypt.compare(password, user.password, (err, result) => {
+      bcrypt.compare(password, user.password, (_, result) => {
         if (result) {
           return user;
         } else {
@@ -25,26 +25,42 @@ const userDao = {
       return user;
     });
   },
-  async generateAuthToken(user) {
+  generateAuthToken(user) {
     const token = jwt.sign({
-      _id: user
-        ._id.toString()
+      _id: user._id.toString() + user.name.toString(),
     }, process.env.JWT_SECRET);
-    user.tokens = user.tokens.concat({ token });
-    await user.save();
+    console.log(token);
     return token;
   },
   async registerUser(body) {
-    const password = body.password;
-    const hashedPassword = await bcrypt.hash(password, 8);
-    const user = new User({
-      name: body.name,
-      email: body.email,
-      password: hashedPassword,
+    const promise = new Promise(async (res, rej) => {
+      try {
+        const password = body.password;
+        const hashedPassword = await bcrypt.hash(password, 8);
+        (new User({
+          email: body.email,
+          name: body.name,
+          password: hashedPassword,
+          surname: body.surname,
+          cin: body.cin,
+          region: body.region,
+          phone: body.phone,
+        })).save().then(result => {
+          res({ user: result });
+        }).catch((error) => {
+          console.log(error);
+          rej({ error });
+        });
+      } catch (error) {
+        throw new Error(error);
+      }
     });
-    await user.save();
-    return user;
-  
+    try {
+      const user = await promise;
+      return {user};
+    }catch (error) {
+      return {error};
+    }
   }
 }
 
